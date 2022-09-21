@@ -2,68 +2,21 @@
 extends EditorPlugin
 
 var steamdeck_icon = preload("res://addons/decker/Steamdeck.svg")
+var gui_scene = preload("res://addons/decker/scenes/Gui.tscn")
 
-var custom_panel: PanelContainer
-var accept: AcceptDialog
-var settings: ConfirmationDialog
-var devkit_address: String = ""
-var use_debug_mode: bool = false
+var gui: Gui
 
 func _enter_tree():
-	var base_control = get_editor_interface().get_base_control();
-	var style_box = base_control.get_theme_stylebox("LaunchPadNormal", "EditorStyles").duplicate() as StyleBox;
-
-	custom_panel = PanelContainer.new()
-	custom_panel.add_theme_stylebox_override("panel", style_box)
-
-	var steamdeck_button = Button.new()
-	steamdeck_button.flat = true
-	steamdeck_button.focus_mode = Control.FOCUS_NONE
-	steamdeck_button.icon = steamdeck_icon
-	steamdeck_button.pressed.connect(func(): settings.popup_centered())
-
-	custom_panel.add_child(steamdeck_button)
-
-	accept = AcceptDialog.new()
-	accept.title = "Test"
-	custom_panel.add_child(accept)
-
-	settings = ConfirmationDialog.new()
-	settings.title = "Deploy"
-	settings.ok_button_text = "Deploy"
-	settings.confirmed.connect(func(): deploy_steamdeck(devkit_address));
-	custom_panel.add_child(settings)
-
-	var container = GridContainer.new()
-	container.columns = 2
-	settings.add_child(container)
-
-	var address = LineEdit.new()
-	address.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	address.custom_minimum_size = Vector2i(200, 30)
-	address.text_changed.connect(func(text): devkit_address = text )
-	var devkit_address_label = Label.new()
-	devkit_address_label.text = "Devkit Address:"
-	container.add_child(devkit_address_label)
-	container.add_child(address)
-
-	var debug_mode = CheckBox.new()
-	debug_mode.button_pressed = use_debug_mode
-	debug_mode.toggled.connect(func(t): use_debug_mode = t)
-	var debug_mode_label = Label.new()
-	debug_mode_label.text = "Debug Build:"
-	container.add_child(debug_mode_label)
-	container.add_child(debug_mode)
-
-	add_control_to_container(CustomControlContainer.CONTAINER_TOOLBAR, custom_panel)
-	custom_panel.get_parent().move_child(custom_panel, -3)
+	gui = gui_scene.instantiate()
+	gui.deploy.connect(func(devkit_address, use_debug_mode): deploy_steamdeck(devkit_address, use_debug_mode))
+	add_control_to_container(CustomControlContainer.CONTAINER_TOOLBAR, gui)
+	gui.get_parent().move_child(gui, -3)
 
 func _exit_tree():
-	if custom_panel:
-		remove_control_from_container(CustomControlContainer.CONTAINER_TOOLBAR, custom_panel)
-		custom_panel.queue_free()
+	remove_control_from_container(CustomControlContainer.CONTAINER_TOOLBAR, gui)
+	gui.queue_free()
 
-func deploy_steamdeck(devkit_address):
+func deploy_steamdeck(devkit_address, use_debug_mode):
 	get_editor_interface().save_scene()
 	var project_path = ProjectSettings.globalize_path("res://")
 
